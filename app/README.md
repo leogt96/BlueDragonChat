@@ -25,7 +25,7 @@ El objetivo principal de este proyecto es explorar y construir una red de malla 
 
 ---
 
-## 🤔 ¿Cómo Funciona? La Lógica Explicada
+##  ¿Cómo Funciona?
 
 Imagina que estás en un lugar sin señal. Así es como BlueDragon Chat te permitiría comunicarte:
 
@@ -50,7 +50,7 @@ Esto asegura que la red siga viva y que los mensajes se entreguen de forma fiabl
 
 ---
 
-## 🏗️ Estructura del Proyecto y Arquitectura
+##  Estructura del Proyecto y Arquitectura
 
 El proyecto sigue el patrón **MVVM (Model-View-ViewModel)**.
 
@@ -79,29 +79,29 @@ app/
 
 ---
 
-## 🎙️ Guía: Desafíos Técnicos y Decisiones
+## 🎙️ Guía: Desafíos Técnicos 
 
 Esta sección profundiza en el *porqué* detrás de las decisiones clave del proyecto.
 
-#### P: ¿Por qué elegiste Bluetooth Low Energy (BLE) en lugar de Wi-Fi Direct?
+#### P: ¿Por qué Bluetooth Low Energy (BLE) en lugar de Wi-Fi Direct?
 **R:** La elección se basó en el caso de uso: una red de malla que necesita estar "siempre activa" de forma pasiva.
 - **Bajo Consumo:** BLE está optimizado para consumir muy poca energía durante el escaneo y la publicidad, lo que es ideal para una app que se ejecuta constantemente en segundo plano. Wi-Fi Direct es más potente pero consume mucha más batería.
 - **Conexiones Múltiples:** Aunque BLE tiene limitaciones, el modelo de cliente/servidor GATT permite que un dispositivo actúe como servidor para múltiples clientes, lo que se adapta bien a la estructura de la red de malla.
 - **Simplicidad de Descubrimiento:** El sistema de `Advertising` de BLE es perfecto para que los nodos se descubran pasivamente sin necesidad de un emparejamiento complejo.
 
-#### P: ¿Cómo funciona tu protocolo de enrutamiento y por qué elegiste "Flooding"?
+#### P: ¿Cómo funciona el protocolo de enrutamiento y por qué "Flooding"?
 **R:** Para el MVP, implementé un protocolo de enrutamiento simple y robusto llamado **Flooding controlado por TTL (Time-To-Live)**.
 - **Funcionamiento:** Cuando un nodo recibe un mensaje que no es para él, lo retransmite a todos sus vecinos, excepto al que se lo envió. Cada "salto" reduce el TTL del mensaje. Cuando el TTL llega a 0, el mensaje se descarta. Esto evita bucles de retransmisión infinitos.
 - **¿Por qué esta estrategia?** Para una red pequeña y un MVP, el flooding es muy fiable y fácil de implementar. No requiere que los nodos mantengan complejas tablas de enrutamiento. La alternativa, como AODV o DSDV, añade una sobrecarga significativa que no era necesaria en esta fase inicial. El **protocolo de chismorreo (Gossip)** que implementé sienta las bases para un enrutamiento más inteligente en el futuro, ya que permite que los nodos conozcan la topología de la red.
 
-#### P: ¿Cómo resolviste el desafío de la mensajería offline (sin conexión)?
+#### P: ¿Cómo se resolvio el desafío de la mensajería offline (sin conexión)?
 **R:** El núcleo de la solución es la estrategia **"Store-and-Forward"**, que se apoya en dos componentes clave: **Room** y **WorkManager**.
 1.  **Store (Almacenar):** Cuando un usuario envía un mensaje, este se guarda *inmediatamente* en la base de datos local (Room) con el estado `PENDING`. Esto garantiza que ningún mensaje se pierda, incluso si no hay conexión en ese momento.
 2.  **Forward (Reenviar):** La aplicación intenta reenviar los mensajes `PENDING` en dos escenarios:
     - **Reactivamente:** Cuando se establece una nueva conexión Bluetooth, se activa una función que busca y reenvía todos los mensajes pendientes.
     - **Proactivamente:** Gracias a **WorkManager**, una tarea en segundo plano se ejecuta periódicamente (cada 15 minutos) y hace lo mismo. Esto asegura que los mensajes se intenten enviar de forma fiable incluso si la aplicación no está en primer plano.
 
-#### P: ¿Cómo gestionaste el estado de la UI con datos que cambian en tiempo real?
+#### P: ¿Cómo se gestiono el estado de la UI con datos que cambian en tiempo real?
 **R:** Utilicé un enfoque reactivo moderno con **Kotlin Flows** y **Jetpack Compose**.
 - El `DAO` de Room expone las consultas a la base de datos como un `Flow<List<...>>`.
 - El `BluetoothController` consume estos Flows y los transforma en un `StateFlow`, que representa la fuente única de verdad para el estado de la UI (mensajes, nodos conocidos, etc.).
